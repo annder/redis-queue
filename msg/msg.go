@@ -3,6 +3,7 @@ package msg
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 )
 
 var ctx = context.TODO()
@@ -15,13 +16,13 @@ type IMessage interface {
 }
 
 type Message struct {
-	name    string            // 消息名
+	Name    string            // 消息名
 	Content map[string]string `json:"content"`
 }
 
 // 获取通道
 func (m *Message) GetChannel() string {
-	return m.name
+	return m.Name
 }
 
 // 序列化
@@ -32,6 +33,7 @@ func (m *Message) Marshal() ([]byte, error) {
 
 func (m *Message) Resolve()  error {
 	// 做一个逻辑处理
+	fmt.Printf("consumed %+v\n", m.Content)
 	return nil
 }
 

@@ -2,46 +2,37 @@ package main
 
 import (
 	"goredisqueue/client"
+	msg2 "goredisqueue/msg"
 	"goredisqueue/rq"
-	"log"
-
-	"github.com/gin-gonic/gin"
+	"os"
+	"os/signal"
+	"strconv"
+	"syscall"
+	"time"
 )
 
 func main() {
 	redisClient := client.Reids()
 	queue := rq.NewCon(redisClient)
-	s := gin.Default()
-	// 发送队列数据
-	s.GET("/delivery", func(context *gin.Context) {
-		if ok := queue.Delivery("akv", "msg"); ok {
-			context.JSON(200, gin.H{
-				"code": 200,
-				"msg":  "ok",
-				"data": nil,
-			})
-			return
-		} else {
-			context.JSON(200, gin.H{
-				"code": 500,
-				"msg":  "err",
-				"data": nil,
-			})
-			context.Abort()
+	msg := &msg2.Message{Name: "domeQueue"}
+	queue.InitReceiver(msg)
+	go func() {
+		for i := 0; i < 10; i++ {
+			msg := &msg2.Message{Name: "demoQueue", Content: map[string]string{
+				"order_no": strconv.FormatInt(time.Now().Unix(), 10),
+			}}
+			_ = queue.Delivery(msg)
+		}
+	}()
+	quit := make(chan os.Signal, 1)
+
+	signal.Notify(quit, syscall.SIGINT)
+	//
+	for {
+
+		switch <-quit {
+		case syscall.SIGINT:
 			return
 		}
-	})
-	// 接受队列数据
-	s.GET("/receive", func(context *gin.Context) {
-		value := queue.Receive("akv", "msg")
-		if value != "" {
-			context.JSON(200, gin.H{
-				"code": 200,
-				"msg":  "ok",
-				"data": value,
-			})
-			return
-		}
-	})
-	log.Fatal(s.Run(":8080"))
+	}
 }
