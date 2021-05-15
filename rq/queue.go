@@ -2,6 +2,7 @@ package rq
 
 import (
 	"context"
+	"goredisqueue/msg"
 	"log"
 
 	"github.com/go-redis/redis/v8"
@@ -22,6 +23,20 @@ func (q *Queue) lrem(queue, msg string) error {
 		return err
 	}
 	return nil
+}
+
+func (q *Queue) rpoplpush(imsg msg.IMessage, sourceQueue, destQueue string) (interface{}, msg.IMessage, error) {
+	//  把数据放在最前面
+	r, err := q.con.RPopLPush(ctx, sourceQueue, destQueue).Result() // 这里要改一下结构
+
+	if err != nil {
+		return nil, nil, err
+	}
+	if r == "" {
+		return nil, nil, nil
+	}
+	defer q.con.Close()
+
 }
 
 // 接受数据
